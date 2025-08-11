@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>FitTrack — Set Günlüğü (PWA)</title>
 
-  <!-- iOS standalone görünüm -->
+  <!-- iOS için uygulama ikonu ve PWA meta'ları -->
   <link rel="apple-touch-icon" href="icons/app-180.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -93,7 +93,7 @@
     .item{display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px dashed rgba(255,255,255,.08);}
     .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
 
-    /* Ripple */
+    /* Tıklamada küçük ripple efekti */
     button{position:relative; overflow:hidden; isolation:isolate}
     button::after{
       content:""; position:absolute; left:var(--x,50%); top:var(--y,50%);
@@ -104,7 +104,7 @@
     }
     button:active::after{ width:280px; height:280px; opacity:1 }
 
-    /* Alt bar */
+    /* Alttaki sabit bar (işlemler) */
     .navbar{
       position: sticky; bottom:0; z-index:40;
       background: linear-gradient(0deg, rgba(15,17,20,.96), rgba(15,17,20,.78));
@@ -115,23 +115,24 @@
     .navbar .bar{display:flex; gap:10px; padding:10px}
     .navbar .bar .btn{flex:1}
 
-    /* Toast */
+    /* Küçük bildirim kutusu */
     #toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(12px);
       background:#111317; border:1px solid #262b33; padding:10px 14px; border-radius:12px;
       color:#dfe5ec; font-weight:600; box-shadow:var(--shadow-sm); opacity:0; pointer-events:none;
       transition: all .35s ease; z-index:60}
     #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
-    /* >>> Tartı en altta, navbar'a çakışmasın */
+    /* Tartı en altta dursun ve alttaki barla çakışmasın */
     .tarti-bottom{
       margin-bottom: calc(env(safe-area-inset-bottom) + 88px);
     }
 
-    /* >>> Elle giriş kutusunu yalnızca gerekli olduğunda gösterelim */
+    /* "(Elle giriş)" kutusu sadece gerektiğinde görünsün */
     .hidden{display:none}
   </style>
 </head>
 <body>
+  <!-- Üst başlık -->
   <div class="appbar">
     <div class="wrap title">
       <div class="logo">
@@ -146,7 +147,7 @@
   </div>
 
   <div class="wrap">
-    <!-- Yeni Kayıt -->
+    <!-- YENİ KAYIT: tarih + kas grubu + hareket + setler -->
     <section class="section card">
       <h2>Yeni Kayıt</h2>
 
@@ -161,32 +162,31 @@
         </div>
       </div>
 
-     <!-- Satır 1: Hareket -->
-<div class="row cols-2" style="margin-top:6px">
-  <div>
-    <label>Hareket</label>
-    <select id="movement"></select>
-  </div>
-  <div></div>
-</div>
+      <!-- Satır 1: Hareket seçimi -->
+      <div class="row cols-2" style="margin-top:6px">
+        <div>
+          <label>Hareket</label>
+          <select id="movement"></select>
+        </div>
+        <div></div>
+      </div>
 
-<!-- Satır 2: Set sayısı + Şablon butonu -->
-<div class="row cols-2" style="margin-top:6px">
-  <div>
-    <label>Set sayısı (şablon)</label>
-    <select id="setCountSelect">
-      <option>1</option><option>2</option><option>3</option>
-      <option>4</option><option>5</option><option>6</option>
-    </select>
-  </div>
-  <div>
-    <label>&nbsp;</label>
-    <button type="button" class="btn ghost" id="templateBtn">Set Şablonu Uygula</button>
-  </div>
-</div>
+      <!-- Satır 2: Set sayısı şablonu + buton -->
+      <div class="row cols-2" style="margin-top:6px">
+        <div>
+          <label>Set sayısı (şablon)</label>
+          <select id="setCountSelect">
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option><option>6</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="button" class="btn ghost" id="templateBtn">Set Şablonu Uygula</button>
+        </div>
+      </div>
 
-
-      <!-- Elle giriş gerekirse görünür olacak. Eski id'yi koruyoruz: exerciseInput -->
+      <!-- Hareket listede yoksa "elle giriş" açılır (ID aynı: exerciseInput) -->
       <div id="customExerciseWrap" class="hidden">
         <label>Hareket (Elle Giriş)</label>
         <input type="text" id="exerciseInput" placeholder="Örn: Squat" list="exerciseList">
@@ -199,7 +199,7 @@
       <div class="muted" style="margin-top:8px">Kilo girmezsen set <strong>BW×tekrar</strong> olarak kaydedilir.</div>
     </section>
 
-    <!-- Geçmiş -->
+    <!-- GEÇMİŞ: filtre + sıralama + liste -->
     <section class="section card">
       <h2>Geçmiş</h2>
       <div class="row cols-2">
@@ -219,7 +219,7 @@
       <div class="row list" id="list"></div>
     </section>
 
-    <!-- Tartı Günlüğü (EN ALTA) -->
+    <!-- TARTI GÜNLÜĞÜ: en altta -->
     <section class="section card tarti-bottom">
       <details id="weighBox">
         <summary style="cursor:pointer;display:flex;align-items:center;gap:8px">
@@ -251,9 +251,9 @@
       </details>
     </section>
 
-  </div> <!-- wrap KAPANIŞI -->
+  </div> <!-- /wrap -->
 
-  <!-- Alt bar -->
+  <!-- Alttaki işlem barı -->
   <div class="navbar">
     <div class="wrap bar">
       <button class="btn ghost" id="exportBtn">Dışa Aktar</button>
@@ -266,13 +266,16 @@
 
   <div id="toast">Kaydedildi ✓</div>
 
-  <!-- AutoAnimate -->
+  <!-- Küçük geçiş animasyonları için -->
   <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@1.0.0-beta.6/dist/auto-animate.min.js"></script>
 
   <script>
     "use strict";
 
-    /* ===== Egzersiz Veri Seti (Kas Grubu → Hareketler) ===== */
+    /* =========================
+       1) HAREKET VERİ SETİ
+       Kas grubu → hareket listesi
+       ========================= */
     const EXERCISES = {
       "Göğüs (Chest)": [
         "Bench Press (Düz Bench)",
@@ -341,36 +344,99 @@
     };
     const CUSTOM_VALUE = "__custom__";
 
-    /* ===== IndexedDB ===== */
-    const DB='fittrack-db', STORE='entries', WEIGH='weighins'; let db, entries=[], weighs=[];
-    function idbOpen(){return new Promise((res,rej)=>{
-      const r=indexedDB.open(DB,2); // v2: weighins store
-      r.onupgradeneeded=e=>{
-        const d=e.target.result;
-        if(!d.objectStoreNames.contains(STORE)){
-          const os=d.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
-          os.createIndex('by_exercise','exercise'); os.createIndex('by_date','date');
-        }
-        if(!d.objectStoreNames.contains(WEIGH)){
-          const ws=d.createObjectStore(WEIGH,{keyPath:'id',autoIncrement:true});
-          ws.createIndex('by_date','date');
-        }
-      };
-      r.onsuccess=()=>{db=r.result;res();};
-      r.onerror=()=>rej(r.error);
-    });}
-    function idbAdd(o){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(o).onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
-    function idbAll(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const a=[];tx.objectStore(STORE).openCursor().onsuccess=e=>{const c=e.target.result;if(c){a.push(c.value);c.continue();}else res(a)};tx.onerror=()=>rej(tx.error);});}
-    function idbClear(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+    /* =========================
+       2) INDEXEDDB (kalıcı yerel veritabanı)
+       entries: egzersiz kayıtları
+       weighins: tartı verileri
+       ========================= */
+    const DB='fittrack-db', STORE='entries', WEIGH='weighins';
+    let db, entries=[], weighs=[];
 
-    // Weigh-ins
-    function idbAddWeigh(o){return new Promise((res,rej)=>{const tx=db.transaction(WEIGH,'readwrite');tx.objectStore(WEIGH).add(o).onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
-    function idbAllWeigh(){return new Promise((res,rej)=>{const tx=db.transaction(WEIGH,'readonly');const a=[];tx.objectStore(WEIGH).openCursor().onsuccess=e=>{const c=e.target.result;if(c){a.push(c.value);c.continue();}else res(a)};tx.onerror=()=>rej(tx.error);});}
-    function idbClearWeigh(){return new Promise((res,rej)=>{const tx=db.transaction(WEIGH,'readwrite');tx.objectStore(WEIGH).clear().onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+    // IndexedDB bağlantısı aç/oluştur (v2: weighins store eklendi)
+    function idbOpen(){
+      return new Promise((res,rej)=>{
+        const r=indexedDB.open(DB,2);
+        r.onupgradeneeded=e=>{
+          const d=e.target.result;
+          if(!d.objectStoreNames.contains(STORE)){
+            const os=d.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
+            os.createIndex('by_exercise','exercise');
+            os.createIndex('by_date','date');
+          }
+          if(!d.objectStoreNames.contains(WEIGH)){
+            const ws=d.createObjectStore(WEIGH,{keyPath:'id',autoIncrement:true});
+            ws.createIndex('by_date','date');
+          }
+        };
+        r.onsuccess=()=>{db=r.result;res();};
+        r.onerror=()=>rej(r.error);
+      });
+    }
+    function idbAdd(o){
+      return new Promise((res,rej)=>{
+        const tx=db.transaction(STORE,'readwrite');
+        tx.objectStore(STORE).add(o).onsuccess=()=>res();
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
+    function idbAll(){
+      return new Promise((res,rej)=>{
+        const tx=db.transaction(STORE,'readonly'); const a=[];
+        tx.objectStore(STORE).openCursor().onsuccess=e=>{
+          const c=e.target.result; if(c){a.push(c.value); c.continue();} else res(a);
+        };
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
+    function idbClear(){
+      return new Promise((res,rej)=>{
+        const tx=db.transaction(STORE,'readwrite');
+        tx.objectStore(STORE).clear().onsuccess=()=>res();
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
 
-    /* ===== UI Elemanları ===== */
+    // Tartı için store yardımcıları
+    function idbAddWeigh(o){
+      return new Promise((res,rej)=>{
+        const tx=db.transaction(WEIGH,'readwrite');
+        tx.objectStore(WEIGH).add(o).onsuccess=()=>res();
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
+    function idbAllWeigh(){
+      return new Promise((res,rej)=>{
+        const tx=db.transaction(WEIGH,'readonly'); const a=[];
+        tx.objectStore(WEIGH).openCursor().onsuccess=e=>{
+          const c=e.target.result; if(c){a.push(c.value); c.continue();} else res(a);
+        };
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
+    function idbClearWeigh(){
+      return new Promise((res,rej)=>{
+        const tx=db.transaction(WEIGH,'readwrite');
+        tx.objectStore(WEIGH).clear().onsuccess=()=>res();
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
+
+    /* =========================
+       3) KOLAY YARDIMCILAR
+       ========================= */
+    function todayISO(){
+      const t=new Date();
+      return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    }
+    function trWeekday(iso){
+      const [y,m,d]=iso.split('-').map(Number);
+      const w=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+      return w[new Date(y,m-1,d).getDay()];
+    }
+
+    // DOM referansları
     const dateInput=document.getElementById('dateInput');
-    const exerciseInput=document.getElementById('exerciseInput'); // arka plan değeri burada tutuluyor
+    const exerciseInput=document.getElementById('exerciseInput'); // arka planda gerçek hareket adı burada tutulur
     const exerciseList=document.getElementById('exerciseList');
     const setCountSelect=document.getElementById('setCountSelect');
     const setsBox=document.getElementById('setsBox');
@@ -386,12 +452,12 @@
     const wipeBtn=document.getElementById('wipeBtn');
     const saveBtn=document.getElementById('saveBtn');
 
-    // Yeni: Kas grubu ve hareket select'leri
+    // Kas grubu & hareket select'leri
     const muscleGroup = document.getElementById('muscleGroup');
     const movement = document.getElementById('movement');
     const customExerciseWrap = document.getElementById('customExerciseWrap');
 
-    // Weigh UI
+    // Tartı UI
     const wDate=document.getElementById('wDate');
     const wKg=document.getElementById('wKg');
     const wSaveBtn=document.getElementById('wSaveBtn');
@@ -401,14 +467,9 @@
     const wWipeBtn=document.getElementById('wWipeBtn');
     const wList=document.getElementById('wList');
 
-    function todayISO(){const t=new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;}
-    function trWeekday(iso){
-      const [y,m,d]=iso.split('-').map(Number);
-      const w=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
-      return w[new Date(y,m-1,d).getDay()];
-    }
-
-    /* ===== Set satırları ===== */
+    /* =========================
+       4) SET SATIRI OLUŞTURMA/ÇIKARMA
+       ========================= */
     function addSet(w='',r=''){
       const row=document.createElement('div'); row.className='set-row';
       row.innerHTML=`
@@ -445,7 +506,9 @@
       return out;
     }
 
-    /* ===== Select doldurma ve bağlama ===== */
+    /* =========================
+       5) KAS GRUBU/HAREKET DOLDURMA
+       ========================= */
     function populateGroups(){
       const groups = Object.keys(EXERCISES);
       muscleGroup.innerHTML = groups.map(g=>`<option value="${g}">${g}</option>`).join('');
@@ -459,7 +522,8 @@
       }
       movement.innerHTML = options.map(n=>`<option value="${n}">${n}</option>`).join('');
       movement.appendChild(new Option("— (Listede yok / Elle giriş) —", CUSTOM_VALUE));
-      // Varsayılan: ilk hareketi seç ve exerciseInput'ı senkronize et
+
+      // Varsayılan: ilk hareket → exerciseInput'a yaz ve "elle giriş"i kapat
       if(options.length>0){
         movement.value = options[0];
         exerciseInput.value = options[0];
@@ -470,7 +534,6 @@
         customExerciseWrap.classList.remove('hidden');
       }
     }
-
     muscleGroup.addEventListener('change', ()=>{
       if(muscleGroup.value === CUSTOM_VALUE){
         movement.innerHTML = `<option value="${CUSTOM_VALUE}">— (Listede yok / Elle giriş) —</option>`;
@@ -491,14 +554,14 @@
       }
     });
 
-    /* ===== Geçmiş filtreleri ===== */
+    /* =========================
+       6) GEÇMİŞ LİSTE/TOAST
+       ========================= */
     function fillExerciseOptions(){
       const names=[...new Set(entries.map(e=>e.exercise))].sort((a,b)=>a.localeCompare(b,'tr'));
       exerciseList.innerHTML = names.map(n=>`<option value="${n}">`).join('');
       filterExercise.innerHTML = ['<option value="__all__">Tümü</option>', ...names.map(n=>`<option>${n}</option>`)].join('');
     }
-
-    /* ===== Listeleme ===== */
     function render(){
       const f=filterExercise.value||"__all__";
       let filtered=[...entries];
@@ -529,8 +592,6 @@
       }).join('');
       if (window.autoAnimate) window.autoAnimate(listDiv);
     }
-
-    /* ===== Toast ===== */
     function showToast(msg='Kaydedildi ✓'){
       toast.textContent = msg;
       toast.classList.add('show');
@@ -538,31 +599,50 @@
       setTimeout(()=>toast.classList.remove('show'), 1400);
     }
 
-    /* ===== Kayıt İşlemleri (Egzersiz) ===== */
+    /* =========================
+       7) OTOMATİK ORTAK JSON YEDEK
+       (entries + weighs birlikte)
+       ========================= */
+    function downloadJSON(filename, obj){
+      const json = JSON.stringify(obj, null, 2);
+      const blob = new Blob([json], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    function jsonAutoBackup(){
+      // Açıklama: Her kayıttan sonra arka planda güncel yedek dosyası indirir.
+      const now = new Date();
+      const stamp = now.toISOString().slice(0,19).replace(/[:T]/g,'-'); // YYYY-MM-DD-HH-MM-SS
+      const payload = { entries, weighs, exportedAt: now.toISOString() };
+      downloadJSON(`fittrack-backup-${stamp}.json`, payload);
+    }
+
+    /* =========================
+       8) KAYDET/DIŞA-İÇE AKTAR/SİL — EGZERSİZ
+       ========================= */
     async function saveEntry(){
       const date = dateInput.value || todayISO();
-      const exercise = (exerciseInput.value || '').trim(); // select veya elle giriş senkron
+      const exercise = (exerciseInput.value || '').trim(); // select veya elle girişten gelir
       const sets = getSets();
       if(!exercise){ alert('Hareket gerekli'); return; }
       if(sets.length===0){ alert('En az 1 set ekleyin'); return; }
 
       await idbAdd({date, exercise, sets, ts:Date.now()});
       entries = await idbAll();
-      // form temizliği
-      if(muscleGroup.value !== CUSTOM_VALUE){ // listeden seçildiyse eski değeri koru
-        // sadece setleri temizle
-      } else {
-        exerciseInput.value='';
-      }
+
+      // Form temizliği: listeden seçildiyse sadece setleri sıfırla; elle girişte metni de temizle
+      if(muscleGroup.value === CUSTOM_VALUE){ exerciseInput.value=''; }
       setsBox.innerHTML='';
+
       render(); fillExerciseOptions();
       showToast();
+      jsonAutoBackup(); // ← Kaydettikten sonra otomatik ortak yedek indir
     }
-
-    /* ===== Dışa/İçe Aktar, Sil (Egzersiz) ===== */
     function exportJSON(){
-      const blob=new Blob([JSON.stringify(entries)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='fittrack-export.json'; a.click(); URL.revokeObjectURL(a.href);
+      // Açıklama: Sadece egzersiz (entries) verilerini dışa aktarır.
+      downloadJSON('fittrack-entries.json', entries);
     }
     async function wipeData(){
       if(!confirm('Tüm egzersiz verilerini silmek istiyor musun?')) return;
@@ -570,7 +650,43 @@
       showToast('Temizlendi ✓');
     }
 
-    /* ===== Tartı Günlüğü Aksiyonları ===== */
+    // Egzersiz İçe Aktar: Artık ortak yedeği (entries+weighs) de tanır
+    importFile.addEventListener('change', async e=>{
+      const f=e.target.files[0]; if(!f) return;
+      try{
+        const text=await f.text(); const data=JSON.parse(text);
+
+        // Ortak yedek (entries + weighs) formatı
+        if (data && typeof data === 'object' && (Array.isArray(data.entries) || Array.isArray(data.weighs))) {
+          if (Array.isArray(data.entries)) {
+            await idbClear();
+            for (const o of data.entries) await idbAdd(o);
+            entries = await idbAll();
+          }
+          if (Array.isArray(data.weighs)) {
+            await idbClearWeigh();
+            for (const w of data.weighs) await idbAddWeigh(w);
+            weighs = await idbAllWeigh();
+          }
+          fillExerciseOptions(); render(); renderWeighs();
+          showToast('Ortak yedek içe aktarıldı ✓');
+          return;
+        }
+
+        // Eski tek format: sadece entries dizisi
+        if(!Array.isArray(data)) throw new Error('Geçersiz JSON');
+        await idbClear(); 
+        await Promise.all(data.map(o=>idbAdd(o)));
+        entries=await idbAll(); 
+        fillExerciseOptions(); render(); 
+        showToast('İçe aktarıldı ✓');
+      }catch(err){ alert('Hata: '+err.message); }
+      finally { e.target.value=''; } // aynı dosyayı tekrar seçebilmek için sıfırla
+    });
+
+    /* =========================
+       9) KAYDET/DIŞA-İÇE AKTAR/SİL — TARTI
+       ========================= */
     async function saveWeigh(){
       const date = (wDate.value || todayISO()).trim();
       const kg = parseFloat((wKg.value || '').replace(',','.'));
@@ -580,17 +696,16 @@
       wKg.value='';
       renderWeighs();
       showToast('Kilo kaydedildi ✓');
+      jsonAutoBackup(); // ← Kaydettikten sonra otomatik ortak yedek indir
     }
     function exportWeighs(){
-      const blob=new Blob([JSON.stringify(weighs)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='fittrack-weighins.json'; a.click(); URL.revokeObjectURL(a.href);
+      // Açıklama: Sadece tartı (weighs) verilerini dışa aktarır.
+      downloadJSON('fittrack-weighins.json', weighs);
     }
     async function wipeWeighs(){
       if(!confirm('Tüm tartı verilerini silmek istiyor musun?')) return;
       await idbClearWeigh(); weighs=[]; renderWeighs(); showToast('Tartı verileri temizlendi ✓');
     }
-
-    /* ===== Tartı Listeleme ===== */
     function renderWeighs(){
       const sorted=[...weighs].sort((a,b)=>b.date.localeCompare(a.date));
       wList.innerHTML = sorted.map(w=>{
@@ -602,61 +717,95 @@
       if (window.autoAnimate) window.autoAnimate(wList);
     }
 
-    /* ===== Event bindings ===== */
-    document.getElementById('templateBtn').addEventListener('click', applySetTemplate);
-    document.getElementById('exportBtn').addEventListener('click', exportJSON);
-    document.getElementById('importBtn').addEventListener('click', ()=> importFile.click());
-    importFile.addEventListener('change', async e=>{
-      const f=e.target.files[0]; if(!f) return;
-      try{
-        const text=await f.text(); const arr=JSON.parse(text); if(!Array.isArray(arr)) throw new Error('Geçersiz JSON');
-        await idbClear(); await Promise.all(arr.map(o=>idbAdd(o)));
-        entries=await idbAll(); fillExerciseOptions(); render(); showToast('İçe aktarıldı ✓');
-      }catch(err){ alert('Hata: '+err.message); }
-    });
-    document.getElementById('wipeBtn').addEventListener('click', wipeData);
-    document.getElementById('saveBtn').addEventListener('click', saveEntry);
-
-    // weigh events
-    document.getElementById('wSaveBtn').addEventListener('click', saveWeigh);
-    document.getElementById('wExportBtn').addEventListener('click', exportWeighs);
-    document.getElementById('wImportBtn').addEventListener('click', ()=> wImportFile.click());
+    // Tartı İçe Aktar: Ortak yedeği (entries+weighs) de tanır
     wImportFile.addEventListener('change', async e=>{
       const f=e.target.files[0]; if(!f) return;
       try{
-        const text=await f.text(); const arr=JSON.parse(text); if(!Array.isArray(arr)) throw new Error('Geçersiz JSON');
-        await idbClearWeigh(); await Promise.all(arr.map(o=>idbAddWeigh(o)));
-        weighs=await idbAllWeigh(); renderWeighs(); showToast('Tartı verileri içe aktarıldı ✓');
+        const text=await f.text(); const data=JSON.parse(text);
+
+        // Ortak yedek (entries + weighs) formatı
+        if (data && typeof data === 'object' && (Array.isArray(data.entries) || Array.isArray(data.weighs))) {
+          if (Array.isArray(data.entries)) {
+            await idbClear();
+            for (const o of data.entries) await idbAdd(o);
+            entries = await idbAll();
+          }
+          if (Array.isArray(data.weighs)) {
+            await idbClearWeigh();
+            for (const w of data.weighs) await idbAddWeigh(w);
+            weighs = await idbAllWeigh();
+          }
+          fillExerciseOptions(); render(); renderWeighs();
+          showToast('Ortak yedek içe aktarıldı ✓');
+          return;
+        }
+
+        // Eski tek format: sadece weighs dizisi
+        if(!Array.isArray(data)) throw new Error('Geçersiz JSON');
+        await idbClearWeigh(); 
+        await Promise.all(data.map(o=>idbAddWeigh(o)));
+        weighs=await idbAllWeigh(); 
+        renderWeighs(); 
+        showToast('Tartı verileri içe aktarıldı ✓');
       }catch(err){ alert('Hata: '+err.message); }
+      finally { e.target.value=''; }
     });
+
+    /* =========================
+       10) BUTON BAĞLANTILARI
+       ========================= */
+    document.getElementById('templateBtn').addEventListener('click', applySetTemplate);
+    document.getElementById('exportBtn').addEventListener('click', exportJSON);
+    document.getElementById('importBtn').addEventListener('click', ()=> importFile.click());
+    document.getElementById('wipeBtn').addEventListener('click', wipeData);
+    document.getElementById('saveBtn').addEventListener('click', saveEntry);
+
+    document.getElementById('wSaveBtn').addEventListener('click', saveWeigh);
+    document.getElementById('wExportBtn').addEventListener('click', exportWeighs);
+    document.getElementById('wImportBtn').addEventListener('click', ()=> wImportFile.click());
     document.getElementById('wWipeBtn').addEventListener('click', wipeWeighs);
 
-    /* ===== Ripple koordinatı ===== */
+    /* =========================
+       11) KÜÇÜK DOKUNUŞLAR
+       ========================= */
+    // Ripple efekti için tıklama koordinatı
     function setRipple(e){
       const b=e.target.closest('button'); if(!b) return;
-      const r=b.getBoundingClientRect(); b.style.setProperty('--x',(e.clientX-r.left)+'px'); b.style.setProperty('--y',(e.clientY-r.top)+'px');
+      const r=b.getBoundingClientRect();
+      b.style.setProperty('--x',(e.clientX-r.left)+'px');
+      b.style.setProperty('--y',(e.clientY-r.top)+'px');
     }
     document.addEventListener('pointerdown', setRipple, {passive:true});
 
-    /* ===== Service worker kaydı ===== */
+    // Service Worker kaydı (offline çalışma)
     if('serviceWorker' in navigator){
       window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js'));
     }
 
-    /* ===== Init ===== */
+    /* =========================
+       12) BAŞLAT (init)
+       ========================= */
     (async function init(){
       await idbOpen();
       entries = await idbAll();
       weighs = await idbAllWeigh();
+      // Tarih alanlarını bugünün tarihi ile doldur
       dateInput.value = todayISO();
       wDate.value = todayISO();
 
-      // Kas grupları & hareketler
+      // Kas grupları ve hareketleri doldur
       populateGroups();
-      populateMovements(); // ilk grubu doldurur ve exerciseInput'u set eder
+      populateMovements(); // ilk grubu seçer ve exerciseInput'u senkronlar
 
+      // Geçmiş seçeneklerini doldur + ekranı çiz
       fillExerciseOptions(); render(); renderWeighs();
-      if (window.autoAnimate) { window.autoAnimate(setsBox); window.autoAnimate(listDiv); window.autoAnimate(wList); }
+
+      // Küçük animasyonların hedeflerini bağla
+      if (window.autoAnimate) {
+        window.autoAnimate(setsBox);
+        window.autoAnimate(listDiv);
+        window.autoAnimate(wList);
+      }
     })();
   </script>
 </body>
