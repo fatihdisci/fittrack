@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FitTrack — Set Günlüğü (PWA)</title>
+
+  <!-- iOS standalone görünüm -->
+  <link rel="apple-touch-icon" href="icons/app-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FitTrack" />
+  <meta name="theme-color" content="#0b0b0d" />
+
+  <style>
+    :root{
+      --bg: #0b0b0d;
+      --bg-elev: #121316;
+      --card: #16181c;
+      --text: #f6f7f9;
+      --muted:#9aa0a6;
+      --accent:#4caf50;
+      --accent-2:#21c47b;
+      --danger:#ff6464;
+      --ring: rgba(76,175,80,.22);
+      --radius: 18px;
+      --shadow-lg: 0 20px 50px rgba(0,0,0,.5);
+      --shadow-sm: 0 6px 18px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html{height:-webkit-fill-available; background:var(--bg)}
+    body{
+      margin:0; color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 80% -200px, rgba(76,175,80,.12), transparent 60%),
+        radial-gradient(900px 500px at -200px 60%, rgba(33,196,123,.08), transparent 60%),
+        linear-gradient(180deg, #0a0b0d, #0c0d10);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      min-height: 100dvh;
+    }
+    .appbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: saturate(1.2) blur(12px);
+      background: linear-gradient(180deg, rgba(10,11,13,.9), rgba(10,11,13,.6));
+      border-bottom:1px solid rgba(255,255,255,.04);
+      padding-top: constant(safe-area-inset-top);
+      padding-top: env(safe-area-inset-top);
+    }
+    .wrap{max-width:980px; margin:0 auto; padding:16px;}
+    .appbar .wrap{padding-top:10px; padding-bottom:8px} /* başlık çok yukarıda görünmesin */
+    .title{display:flex; align-items:center; gap:12px}
+    .logo{width:28px; height:28px; display:grid; place-items:center; border-radius:8px;
+      background: linear-gradient(180deg, #27ae60, #1e8e4a); box-shadow: inset 0 1px 0 rgba(255,255,255,.2)}
+    .pill{font-size:12px; color:#bfc5cc; background:#0f1114; border:1px solid #1f232a; padding:4px 10px; border-radius:999px}
+    h1{margin:0; font-size:20px; letter-spacing:.2px}
+    .section{margin:18px 0}
+    .card{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.02), transparent 35%),
+        linear-gradient(0deg, rgba(255,255,255,.03), transparent 25%),
+        var(--card);
+      border:1px solid rgba(255,255,255,.06);
+      box-shadow: var(--shadow-lg);
+      border-radius: var(--radius);
+      padding:16px;
+    }
+    .card h2{margin:0 0 10px; font-size:18px}
+    label{display:block; font-size:13px; color:var(--muted); margin:6px 0 6px}
+    input,select,button{
+      width:100%; padding:12px 14px; border-radius:14px;
+      border:1px solid #262a31; background: #0f1114; color:var(--text);
+      transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, filter .18s ease;
+    }
+    input:focus,select:focus{
+      outline:none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring);
+    }
+    .row{display:grid; gap:12px}
+    @media(min-width:760px){ .cols-2{ grid-template-columns:1fr 1fr } }
+    .muted{color:var(--muted); font-size:12px}
+    .btn{background: linear-gradient(180deg, var(--accent-2), var(--accent)); color:#05130a; font-weight:700; letter-spacing:.2px; border:none}
+    .btn.ghost{background:#101215; color:var(--text); border:1px solid #252a31}
+    .btn.danger{background: linear-gradient(180deg, #ff7b7b, #ff6464); color:#240808; border:none}
+    .btn:hover{filter:brightness(1.06)}
+    .btn:active{transform:scale(.98)}
+    .flex{display:flex; gap:10px; align-items:center}
+    .right{margin-left:auto}
+    .set-row{display:grid; grid-template-columns:1fr 1fr auto; gap:10px; margin-top:10px}
+    .badge{display:inline-block; padding:4px 10px; border-radius:999px; background:#0f1114; border:1px solid #232831; color:#c6cbd2; font-size:12px}
+    .list{margin-top:10px}
+    .item{display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px dashed rgba(255,255,255,.08);}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+
+    /* Ripple */
+    button{position:relative; overflow:hidden; isolation:isolate}
+    button::after{
+      content:""; position:absolute; left:var(--x,50%); top:var(--y,50%);
+      width:0; height:0; background:rgba(255,255,255,.55); border-radius:999px;
+      transform:translate(-50%,-50%); pointer-events:none; opacity:0;
+      transition: width .45s ease, height .45s ease, opacity .6s ease;
+      mix-blend-mode: soft-light;
+    }
+    button:active::after{ width:280px; height:280px; opacity:1 }
+
+    /* Alt bar */
+    .navbar{
+      position: sticky; bottom:0; z-index:40;
+      background: linear-gradient(0deg, rgba(15,17,20,.96), rgba(15,17,20,.78));
+      border-top:1px solid rgba(255,255,255,.05);
+      backdrop-filter: blur(12px);
+      padding-bottom: constant(safe-area-inset-bottom);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .navbar .bar{display:flex; gap:10px; padding:10px}
+    .navbar .bar .btn{flex:1}
+
+    /* Toast */
+    #toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(12px);
+      background:#111317; border:1px solid #262b33; padding:10px 14px; border-radius:12px;
+      color:#dfe5ec; font-weight:600; box-shadow:var(--shadow-sm); opacity:0; pointer-events:none;
+      transition: all .35s ease; z-index:60}
+    #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+  <div class="appbar">
+    <div class="wrap title">
+      <div class="logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 10h2v4H4zM18 10h2v4h-2zM7 9h10v6H7z" fill="white"/>
+        </svg>
+      </div>
+      <h1>FitTrack</h1>
+      <span class="pill">offline • PWA</span>
+      <div class="right"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Yeni Kayıt -->
+    <section class="section card">
+      <h2>Yeni Kayıt</h2>
+
+      <div class="row cols-2">
+        <div>
+          <label>Tarih</label>
+          <input type="date" id="dateInput">
+        </div>
+        <div>
+          <label>Hareket</label>
+          <input type="text" id="exerciseInput" placeholder="Örn: Squat" list="exerciseList">
+          <datalist id="exerciseList"></datalist>
+        </div>
+      </div>
+
+      <div class="row cols-2" style="margin-top:6px">
+        <div>
+          <label>Set sayısı (şablon)</label>
+          <select id="setCountSelect">
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option><option>6</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="button" class="btn ghost" id="templateBtn">Şablonu Uygula</button>
+        </div>
+      </div>
+
+      <label style="margin-top:8px">Setler (kg <em>opsiyonel</em> × tekrar)</label>
+      <div id="setsBox"></div>
+
+      <div class="muted" style="margin-top:8px">Kilo girmezsen set <strong>BW×tekrar</strong> olarak kaydedilir.</div>
+    </section>
+
+    <!-- Geçmiş -->
+    <section class="section card">
+      <h2>Geçmiş</h2>
+      <div class="row cols-2">
+        <div>
+          <label>Hareket seç</label>
+          <select id="filterExercise"></select>
+        </div>
+        <div>
+          <label>Sırala</label>
+          <select id="sortMode">
+            <option value="dateDesc">Tarih ↓ (Yeni→Eski)</option>
+            <option value="dateAsc">Tarih ↑ (Eski→Yeni)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row list" id="list"></div>
+    </section>
+  </div>
+
+  <!-- Alt bar -->
+  <div class="navbar">
+    <div class="wrap bar">
+      <button class="btn ghost" id="exportBtn">Dışa Aktar</button>
+      <input type="file" accept="application/json" id="importFile" style="display:none">
+      <button class="btn ghost" id="importBtn">İçe Aktar</button>
+      <button class="btn danger" id="wipeBtn">Tüm Veriyi Sil</button>
+      <button class="btn" id="saveBtn">Kaydet</button>
+    </div>
+  </div>
+
+  <div id="toast">Kaydedildi ✓</div>
+
+  <!-- AutoAnimate (set/list ekle-sil animasyonları için) -->
+  <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@1.0.0-beta.6/dist/auto-animate.min.js"></script>
+
+  <script>
+    "use strict";
+
+    /* ===== IndexedDB ===== */
+    const DB='fittrack-db', STORE='entries'; let db, entries=[];
+    function idbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{
+      const d=e.target.result, os=d.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
+      os.createIndex('by_exercise','exercise'); os.createIndex('by_date','date');
+    }; r.onsuccess=()=>{db=r.result;res();}; r.onerror=()=>rej(r.error);});}
+    function idbAdd(o){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(o).onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+    function idbAll(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const a=[];tx.objectStore(STORE).openCursor().onsuccess=e=>{const c=e.target.result;if(c){a.push(c.value);c.continue();}else res(a)};tx.onerror=()=>rej(tx.error);});}
+    function idbClear(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+
+    /* ===== UI Elemanları ===== */
+    const dateInput=document.getElementById('dateInput');
+    const exerciseInput=document.getElementById('exerciseInput');
+    const exerciseList=document.getElementById('exerciseList');
+    const setCountSelect=document.getElementById('setCountSelect');
+    const setsBox=document.getElementById('setsBox');
+    const filterExercise=document.getElementById('filterExercise');
+    const sortMode=document.getElementById('sortMode');
+    const listDiv=document.getElementById('list');
+    const importFile=document.getElementById('importFile');
+    const toast=document.getElementById('toast');
+
+    const templateBtn=document.getElementById('templateBtn');
+    const exportBtn=document.getElementById('exportBtn');
+    const importBtn=document.getElementById('importBtn');
+    const wipeBtn=document.getElementById('wipeBtn');
+    const saveBtn=document.getElementById('saveBtn');
+
+    function todayISO(){const t=new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;}
+    function trWeekday(iso){
+      const [y,m,d]=iso.split('-').map(Number);
+      const w=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+      return w[new Date(y,m-1,d).getDay()];
+    }
+
+    function addSet(w='',r=''){
+      const row=document.createElement('div'); row.className='set-row';
+      row.innerHTML=`
+        <input inputmode="decimal" placeholder="kg (opsiyonel)" value="${w}">
+        <input inputmode="numeric" placeholder="tekrar" value="${r}">
+        <button type="button" class="btn ghost">Sil</button>
+      `;
+      // Sil butonu dinleyicisi
+      const btn = row.querySelector('button');
+      btn.addEventListener('click', ()=> removeSet(btn));
+      setsBox.appendChild(row);
+    }
+    function removeSet(btn){
+      const rows=[...setsBox.querySelectorAll('.set-row')];
+      if(rows.length<=1){ rows[0]?.querySelectorAll('input').forEach(i=>i.value=''); return; }
+      btn.parentElement.remove();
+    }
+    function applySetTemplate(){
+      const n=parseInt(setCountSelect.value,10);
+      setsBox.innerHTML='';
+      for(let i=0;i<n;i++) addSet();
+      if (window.autoAnimate) window.autoAnimate(setsBox);
+    }
+    function getSets(){
+      const rows=[...setsBox.querySelectorAll('.set-row')], out=[];
+      for(const r of rows){
+        const wStr=(r.children[0].value||'').trim();
+        const w = wStr==='' ? null : parseFloat(wStr.replace(',','.'));
+        const rep=parseInt((r.children[1].value||'').trim(),10);
+        if(!isNaN(rep) && rep>0){
+          if(w===null || (!isNaN(w) && w>0)) out.push({w,rep});
+        }
+      }
+      return out;
+    }
+
+    function fillExerciseOptions(){
+      const names=[...new Set(entries.map(e=>e.exercise))].sort((a,b)=>a.localeCompare(b,'tr'));
+      exerciseList.innerHTML = names.map(n=>`<option value="${n}">`).join('');
+      filterExercise.innerHTML = ['<option value="__all__">Tümü</option>', ...names.map(n=>`<option>${n}</option>`)].join('');
+    }
+
+    function render(){
+      const f=filterExercise.value||"__all__";
+      let filtered=[...entries];
+      if(f!=="__all__") filtered=filtered.filter(e=>e.exercise===f);
+
+      const mode=sortMode.value||"dateDesc";
+      if(mode==="dateDesc") filtered.sort((a,b)=>b.date.localeCompare(a.date));
+      else filtered.sort((a,b)=>a.date.localeCompare(b.date));
+
+      listDiv.innerHTML = filtered.map(item=>{
+        const totalReps = item.sets.reduce((t,s)=>t + (s.rep||0), 0);
+        const volume = item.sets.filter(s=>s.w!==null).reduce((t,s)=>t + s.w*s.rep, 0);
+        const anyWeighted = item.sets.some(s=>s.w!==null);
+        const setsTxt = item.sets.map(s=> s.w===null ? `BW×${s.rep}` : `${s.w}kg×${s.rep}` ).join('  •  ');
+        const right = anyWeighted
+          ? `Hacim: ${volume.toFixed(0)} kg<br><span class="muted">Toplam tekrar: ${totalReps}</span>`
+          : `Toplam tekrar: ${totalReps}`;
+        return `<div class="item">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <strong>${item.exercise}</strong>
+              <span class="badge">${item.date} (${trWeekday(item.date)})</span>
+            </div>
+            <div class="muted mono">${setsTxt}</div>
+          </div>
+          <div class="mono" style="text-align:right">${right}</div>
+        </div>`;
+      }).join('');
+      if (window.autoAnimate) window.autoAnimate(listDiv);
+    }
+
+    function showToast(msg='Kaydedildi ✓'){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      if (navigator.vibrate) navigator.vibrate(20);
+      setTimeout(()=>toast.classList.remove('show'), 1400);
+    }
+
+    /* ===== Actions ===== */
+    async function saveEntry(){
+      const date = dateInput.value || todayISO();
+      const exercise = exerciseInput.value.trim();
+      const sets = getSets();
+      if(!exercise){ alert('Hareket adı gerekli'); return; }
+      if(sets.length===0){ alert('En az 1 set ekleyin'); return; }
+
+      if (document.startViewTransition){
+        await document.startViewTransition(async ()=>{
+          await idbAdd({date, exercise, sets, ts:Date.now()});
+          entries = await idbAll();
+          exerciseInput.value=''; setsBox.innerHTML='';
+          render(); fillExerciseOptions();
+        }).finished;
+      } else {
+        await idbAdd({date, exercise, sets, ts:Date.now()});
+        entries = await idbAll();
+        exerciseInput.value=''; setsBox.innerHTML='';
+        render(); fillExerciseOptions();
+      }
+
+      showToast();
+    }
+
+    function exportJSON(){
+      const blob=new Blob([JSON.stringify(entries)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='fittrack-export.json'; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    async function wipeData(){
+      if(!confirm('Tüm verileri silmek istiyor musun?')) return;
+      await idbClear(); entries=[]; fillExerciseOptions(); render();
+      showToast('Temizlendi ✓');
+    }
+
+    /* ===== Event bindings ===== */
+    templateBtn.addEventListener('click', applySetTemplate);
+    exportBtn.addEventListener('click', exportJSON);
+    importBtn.addEventListener('click', ()=> importFile.click());
+    importFile.addEventListener('change', async e=>{
+      const f=e.target.files[0]; if(!f) return;
+      try{
+        const text=await f.text(); const arr=JSON.parse(text); if(!Array.isArray(arr)) throw new Error('Geçersiz JSON');
+        await idbClear(); await Promise.all(arr.map(o=>idbAdd(o)));
+        entries=await idbAll(); fillExerciseOptions(); render(); showToast('İçe aktarıldı ✓');
+      }catch(err){ alert('Hata: '+err.message); }
+    });
+    wipeBtn.addEventListener('click', wipeData);
+    saveBtn.addEventListener('click', saveEntry);
+
+    /* ===== Ripple koordinatı ===== */
+    function setRipple(e){
+      const b=e.target.closest('button'); if(!b) return;
+      const r=b.getBoundingClientRect(); b.style.setProperty('--x',(e.clientX-r.left)+'px'); b.style.setProperty('--y',(e.clientY-r.top)+'px');
+    }
+    document.addEventListener('pointerdown', setRipple, {passive:true});
+    document.addEventListener('mousedown', setRipple, {passive:true});
+    document.addEventListener('touchstart', (e)=>{
+      const t=e.touches[0]; if(!t) return;
+      const el=document.elementFromPoint(t.clientX,t.clientY);
+      if(!el) return;
+      const b=el.closest && el.closest('button'); if(!b) return;
+      const r=b.getBoundingClientRect(); b.style.setProperty('--x',(t.clientX-r.left)+'px'); b.style.setProperty('--y',(t.clientY-r.top)+'px');
+    }, {passive:true});
+
+    /* ===== Service worker kaydı ===== */
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js'));
+    }
+
+    /* ===== Init ===== */
+    (async function init(){
+      await idbOpen();
+      entries = await idbAll();
+      dateInput.value = todayISO();
+      fillExerciseOptions(); render();
+      if (window.autoAnimate) { window.autoAnimate(setsBox); window.autoAnimate(listDiv); }
+    })();
+  </script>
+</body>
+</html>
