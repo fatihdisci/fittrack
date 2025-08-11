@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FitTrack – Set Günlüğü (Offline)</title>
+
+  <!-- iOS PWA -->
+  <link rel="apple-touch-icon" href="icons/app-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FitTrack" />
+  <meta name="theme-color" content="#111111" />
+
+  <style>
+    :root { --bg:#121212; --card:#1e1e1e; --text:#fff; --muted:#9aa0a6; --accent:#4caf50; --danger:#ff6b6b; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    header{position:sticky;top:0;background:linear-gradient(0deg,rgba(18,18,18,.7),var(--bg));backdrop-filter:blur(6px);z-index:10}
+    .wrap{max-width:960px;margin:0 auto;padding:16px}
+    h1{margin:0 0 8px;font-size:22px}
+    .card{background:var(--card);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    label{display:block;font-size:13px;color:var(--muted);margin:6px 0 4px}
+    input,select,button{width:100%;padding:12px;border-radius:12px;border:1px solid #2a2a2a;background:#151515;color:var(--text)}
+    button{background:var(--accent);border:none;font-weight:600;cursor:pointer}
+    button.ghost{background:#151515}
+    button.danger{background:var(--danger)}
+    .row{display:grid;gap:12px}
+    @media(min-width:740px){.row.cols-2{grid-template-columns:1fr 1fr}}
+    .set-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:8px}
+    .badge{display:inline-block;background:#222;padding:4px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .flex{display:flex;gap:8px;align-items:center}
+    .right{margin-left:auto}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .hint{font-size:12px;color:var(--muted)}
+    .item{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #2a2a2a}
+  </style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>FitTrack <span class="badge">offline • sade</span></h1>
+  <div class="hint">Kilo girmek <strong>opsiyoneldir</strong>. Bodyweight hareketlerde sadece tekrar yaz.</div>
+</div></header>
+
+<main class="wrap">
+  <!-- Kayıt Ekle -->
+  <section class="card">
+    <h2 style="margin:0 0 8px">Yeni Kayıt</h2>
+    <div class="row cols-2">
+      <div>
+        <label>Tarih</label>
+        <input type="date" id="dateInput">
+      </div>
+      <div>
+        <label>Hareket</label>
+        <input type="text" id="exerciseInput" placeholder="Örn: Squat" list="exerciseList">
+        <datalist id="exerciseList"></datalist>
+      </div>
+    </div>
+
+    <div class="row cols-2" style="margin:8px 0 4px">
+      <div>
+        <label>Set sayısı (şablon)</label>
+        <select id="setCountSelect">
+          <option>1</option><option>2</option><option>3</option>
+          <option>4</option><option>5</option><option>6</option>
+        </select>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button type="button" class="ghost" onclick="applySetTemplate()">Şablonu Uygula</button>
+      </div>
+    </div>
+
+    <label>Setler (kg <em>opsiyonel</em> × tekrar)</label>
+    <div id="setsBox"></div>
+
+    <div class="flex" style="margin-top:10px">
+      <button type="button" class="ghost" onclick="addSet()">+ Set Ekle</button>
+      <div class="right"></div>
+      <button type="button" onclick="saveEntry()">Kaydet</button>
+    </div>
+    <div class="hint" style="margin-top:8px">Hacim (sadece kilo girilen setler için) ve toplam tekrar otomatik hesaplanır.</div>
+  </section>
+
+  <!-- Geçmiş -->
+  <section class="card">
+    <h2 style="margin:0 0 8px">Geçmiş</h2>
+    <div class="row cols-2">
+      <div>
+        <label>Hareket seç</label>
+        <select id="filterExercise"></select>
+      </div>
+      <div>
+        <label>Sırala</label>
+        <select id="sortMode">
+          <option value="dateDesc">Tarih ↓ (Yeni→Eski)</option>
+          <option value="dateAsc">Tarih ↑ (Eski→Yeni)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex" style="margin:12px 0">
+      <button class="ghost" onclick="exportJSON()">Dışa Aktar (JSON)</button>
+      <input type="file" accept="application/json" id="importFile" style="display:none">
+      <button class="ghost" onclick="document.getElementById('importFile').click()">İçe Aktar</button>
+      <div class="right"></div>
+      <button class="danger" onclick="wipeData()">Tüm Veriyi Sil</button>
+    </div>
+
+    <div id="list"></div>
+  </section>
+</main>
+
+<script>
+/* ===== IndexedDB ===== */
+const DB='fittrack-db', STORE='entries'; let db, entries=[];
+function idbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{
+  const d=e.target.result, os=d.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
+  os.createIndex('by_exercise','exercise'); os.createIndex('by_date','date');
+}; r.onsuccess=()=>{db=r.result;res();}; r.onerror=()=>rej(r.error);});}
+function idbAdd(o){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(o).onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+function idbAll(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const a=[];tx.objectStore(STORE).openCursor().onsuccess=e=>{const c=e.target.result;if(c){a.push(c.value);c.continue();}else res(a)};tx.onerror=()=>rej(tx.error);});}
+function idbClear(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=()=>res();tx.onerror=()=>rej(tx.error);});}
+
+/* ===== UI ===== */
+const dateInput=document.getElementById('dateInput');
+const exerciseInput=document.getElementById('exerciseInput');
+const exerciseList=document.getElementById('exerciseList');
+const setCountSelect=document.getElementById('setCountSelect');
+const setsBox=document.getElementById('setsBox');
+const filterExercise=document.getElementById('filterExercise');
+const sortMode=document.getElementById('sortMode');
+const listDiv=document.getElementById('list');
+const importFile=document.getElementById('importFile');
+
+function todayISO(){const t=new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;}
+function trWeekday(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  const w=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  return w[new Date(y,m-1,d).getDay()];
+}
+
+function addSet(w='',r=''){
+  const row=document.createElement('div'); row.className='set-row';
+  row.innerHTML=`<input inputmode="decimal" placeholder="kg (opsiyonel)" value="${w}">
+                 <input inputmode="numeric" placeholder="tekrar" value="${r}">
+                 <button type="button" class="ghost" onclick="removeSet(this)">Sil</button>`;
+  setsBox.appendChild(row);
+}
+function removeSet(btn){
+  const rows=[...setsBox.querySelectorAll('.set-row')];
+  if(rows.length<=1){ rows[0]?.querySelectorAll('input').forEach(i=>i.value=''); return; }
+  btn.parentElement.remove();
+}
+function applySetTemplate(){
+  const n=parseInt(setCountSelect.value,10);
+  setsBox.innerHTML='';
+  for(let i=0;i<n;i++) addSet();
+}
+function getSets(){
+  const rows=[...setsBox.querySelectorAll('.set-row')], out=[];
+  for(const r of rows){
+    const wStr=(r.children[0].value||'').trim();
+    const w = wStr==='' ? null : parseFloat(wStr.replace(',','.'));
+    const rep=parseInt((r.children[1].value||'').trim(),10);
+    if(!isNaN(rep) && rep>0){
+      if(w===null || (!isNaN(w) && w>0)) out.push({w,rep});
+    }
+  }
+  return out;
+}
+
+function fillExerciseOptions(){
+  const names=[...new Set(entries.map(e=>e.exercise))].sort((a,b)=>a.localeCompare(b,'tr'));
+  exerciseList.innerHTML = names.map(n=>`<option value="\${n}">`).join('');
+  filterExercise.innerHTML = ['<option value="__all__">Tümü</option>', ...names.map(n=>`<option>\${n}</option>`)].join('');
+}
+
+function render(){
+  const f=filterExercise.value||"__all__";
+  let filtered=[...entries];
+  if(f!=="__all__") filtered=filtered.filter(e=>e.exercise===f);
+
+  const mode=sortMode.value||"dateDesc";
+  if(mode==="dateDesc") filtered.sort((a,b)=>b.date.localeCompare(a.date));
+  else filtered.sort((a,b)=>a.date.localeCompare(b.date));
+
+  listDiv.innerHTML = filtered.map(item=>{
+    const totalReps = item.sets.reduce((t,s)=>t + (s.rep||0), 0);
+    const volume = item.sets.filter(s=>s.w!==null).reduce((t,s)=>t + s.w*s.rep, 0);
+    const anyWeighted = item.sets.some(s=>s.w!==null);
+    const setsTxt = item.sets.map(s=> s.w===null ? \`BW×\${s.rep}\` : \`\${s.w}kg×\${s.rep}\` ).join('  •  ');
+    const right = anyWeighted
+      ? \`Hacim: \${volume.toFixed(0)} kg<br><span class="hint">Toplam tekrar: \${totalReps}</span>\`
+      : \`Toplam tekrar: \${totalReps}\`;
+    return \`<div class="item">
+      <div>
+        <div><strong>\${item.exercise}</strong> <span class="badge">\${item.date} (\${trWeekday(item.date)})</span></div>
+        <div class="hint mono">\${setsTxt}</div>
+      </div>
+      <div class="mono" style="text-align:right">\${right}</div>
+    </div>\`;
+  }).join('');
+}
+
+/* ===== Actions ===== */
+async function saveEntry(){
+  const date = dateInput.value || todayISO();
+  const exercise = exerciseInput.value.trim();
+  const sets = getSets();
+  if(!exercise){ alert('Hareket adı gerekli'); return; }
+  if(sets.length===0){ alert('En az 1 set ekleyin'); return; }
+  await idbAdd({date, exercise, sets, ts:Date.now()});
+  entries = await idbAll();
+  exerciseInput.value=''; setsBox.innerHTML=''; // setleri sıfırla
+  fillExerciseOptions(); render();
+}
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(entries)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='fittrack-export.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+importFile.addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const text=await f.text(); const arr=JSON.parse(text); if(!Array.isArray(arr)) throw new Error('Geçersiz JSON');
+    await idbClear(); await Promise.all(arr.map(o=>idbAdd(o)));
+    entries=await idbAll(); fillExerciseOptions(); render(); alert('İçe aktarıldı.');
+  }catch(err){ alert('Hata: '+err.message); }
+});
+async function wipeData(){
+  if(!confirm('Tüm verileri silmek istiyor musun?')) return;
+  await idbClear(); entries=[]; fillExerciseOptions(); render();
+}
+
+/* ===== SW ===== */
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js')); }
+
+/* ===== Init ===== */
+(async function init(){
+  await idbOpen();
+  entries = await idbAll();
+  dateInput.value = todayISO();
+  // Açılışta set kutusu boş kalsın; kullanıcı şablon seçince dolacak.
+  fillExerciseOptions(); render();
+})();
+</script>
+</body>
+</html>
