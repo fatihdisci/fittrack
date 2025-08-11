@@ -161,16 +161,30 @@
         </div>
       </div>
 
-      <div class="row cols-2" style="margin-top:6px">
-        <div>
-          <label>Hareket</label>
-          <select id="movement"></select>
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <button type="button" class="btn ghost" id="templateBtn">Set Şablonu Uygula</button>
-        </div>
-      </div>
+     <!-- Satır 1: Hareket -->
+<div class="row cols-2" style="margin-top:6px">
+  <div>
+    <label>Hareket</label>
+    <select id="movement"></select>
+  </div>
+  <div></div>
+</div>
+
+<!-- Satır 2: Set sayısı + Şablon butonu -->
+<div class="row cols-2" style="margin-top:6px">
+  <div>
+    <label>Set sayısı (şablon)</label>
+    <select id="setCountSelect">
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option>
+    </select>
+  </div>
+  <div>
+    <label>&nbsp;</label>
+    <button type="button" class="btn ghost" id="templateBtn">Set Şablonu Uygula</button>
+  </div>
+</div>
+
 
       <!-- Elle giriş gerekirse görünür olacak. Eski id'yi koruyoruz: exerciseInput -->
       <div id="customExerciseWrap" class="hidden">
