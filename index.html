@@ -121,6 +121,11 @@
       color:#dfe5ec; font-weight:600; box-shadow:var(--shadow-sm); opacity:0; pointer-events:none;
       transition: all .35s ease; z-index:60}
     #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+    /* >>> YENİ: Tartı en altta, navbar'a çakışmasın */
+    .tarti-bottom{
+      margin-bottom: calc(env(safe-area-inset-bottom) + 88px);
+    }
   </style>
 </head>
 <body>
@@ -194,39 +199,39 @@
       <div class="row list" id="list"></div>
     </section>
 
-    <!-- Tartı Günlüğü -->
-    <!-- Tartı Günlüğü (katlanır) -->
-<section class="section card">
-  <details id="weighBox">
-    <summary style="cursor:pointer;display:flex;align-items:center;gap:8px">
-      <strong>Tartı Günlüğü</strong>
-      <span class="pill">Aç/Kapat</span>
-    </summary>
+    <!-- Tartı Günlüğü (EN ALTA ALINDI) -->
+    <section class="section card tarti-bottom">
+      <details id="weighBox">
+        <summary style="cursor:pointer;display:flex;align-items:center;gap:8px">
+          <strong>Tartı Günlüğü</strong>
+          <span class="pill">Aç/Kapat</span>
+        </summary>
 
-    <div style="margin-top:12px">
-      <div class="row cols-2">
-        <div>
-          <label>Tarih</label>
-          <input type="date" id="wDate">
+        <div style="margin-top:12px">
+          <div class="row cols-2">
+            <div>
+              <label>Tarih</label>
+              <input type="date" id="wDate">
+            </div>
+            <div>
+              <label>Kilo (kg)</label>
+              <input type="number" id="wKg" inputmode="decimal" placeholder="Örn: 78.6" step="0.1">
+            </div>
+          </div>
+          <div class="flex" style="margin-top:10px">
+            <button class="btn" id="wSaveBtn">Kilo Kaydet</button>
+            <div class="right"></div>
+            <button class="btn ghost" id="wExportBtn">Dışa Aktar</button>
+            <input type="file" accept="application/json" id="wImportFile" style="display:none">
+            <button class="btn ghost" id="wImportBtn">İçe Aktar</button>
+            <button class="btn danger" id="wWipeBtn">Temizle</button>
+          </div>
+          <div class="list" id="wList"></div>
         </div>
-        <div>
-          <label>Kilo (kg)</label>
-          <input type="number" id="wKg" inputmode="decimal" placeholder="Örn: 78.6" step="0.1">
-        </div>
-      </div>
-      <div class="flex" style="margin-top:10px">
-        <button class="btn" id="wSaveBtn">Kilo Kaydet</button>
-        <div class="right"></div>
-        <button class="btn ghost" id="wExportBtn">Dışa Aktar</button>
-        <input type="file" accept="application/json" id="wImportFile" style="display:none">
-        <button class="btn ghost" id="wImportBtn">İçe Aktar</button>
-        <button class="btn danger" id="wWipeBtn">Temizle</button>
-      </div>
-      <div class="list" id="wList"></div>
-    </div>
-  </details>
-</section>
+      </details>
+    </section>
 
+  </div> <!-- wrap KAPANIŞI -->
 
   <!-- Alt bar -->
   <div class="navbar">
@@ -336,7 +341,7 @@
       for(const r of rows){
         const wStr=(r.children[0].value||'').trim();
         const w = wStr==='' ? null : parseFloat(wStr.replace(',','.'));
-        the_rep = (r.children[1].value||'').trim();
+        const the_rep = (r.children[1].value||'').trim(); /* düzeltme: const */
         const rep=parseInt(the_rep,10);
         if(!isNaN(rep) && rep>0){
           if(w===null || (!isNaN(w) && w>0)) out.push({w,rep});
