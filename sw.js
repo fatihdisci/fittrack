@@ -1,6 +1,6 @@
 // sw.js — Versiyonlanmış önbellek + otomatik eski cache temizliği
 // Sadece bu satırı artır: v3 → v4 gibi
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `fittrack-cache-${CACHE_VERSION}`;
 
 // Uygulamanın offline çalışması için önceden önbelleğe alınacak temel dosyalar
