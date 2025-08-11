@@ -31,3 +31,9 @@ self.addEventListener('fetch', e=>{
     })
   );
 });
+
+function applySetTemplate(){
+  const n = parseInt(document.getElementById('setCountSelect').value, 10);
+  setsBox.innerHTML = '';
+  for(let i=0;i<n;i++) addSet('', ''); // kilo boş, tekrar boş
+}
