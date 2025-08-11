@@ -39,17 +39,42 @@
   <!-- Kayıt Ekle -->
   <section class="card">
     <h2 style="margin:0 0 8px">Yeni Kayıt</h2>
-    <div class="row cols-2">
-      <div>
-        <label>Tarih</label>
-        <input type="date" id="dateInput">
-      </div>
-      <div>
-        <label>Hareket</label>
-        <input type="text" id="exerciseInput" placeholder="Örn: Bench Press" list="exerciseList">
-        <datalist id="exerciseList"></datalist>
-      </div>
-    </div>
+<div class="row cols-2">
+  <div>
+    <label>Tarih</label>
+    <input type="date" id="dateInput">
+  </div>
+  <div>
+    <label>Hareket</label>
+    <input type="text" id="exerciseInput" placeholder="Örn: Squat" list="exerciseList">
+    <datalist id="exerciseList"></datalist>
+  </div>
+</div>
+
+<!-- BURAYA EKLE -->
+<div class="row cols-2" style="margin:8px 0 4px">
+  <div>
+    <label>Set sayısı (şablon)</label>
+    <select id="setCountSelect">
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option>
+    </select>
+  </div>
+  <div>
+    <label>&nbsp;</label>
+    <button type="button" class="ghost" onclick="applySetTemplate()">Şablonu Uygula</button>
+  </div>
+</div>
+<!-- EKLEME BİTTİ -->
+
+<label>Setler (kg <em>opsiyonel</em> × tekrar)</label>
+<div id="setsBox">
+  <div class="set-row">
+    <input inputmode="decimal" placeholder="kg (opsiyonel)">
+    <input inputmode="numeric" placeholder="tekrar">
+    <button type="button" class="ghost" onclick="removeSet(this)">Sil</button>
+  </div>
+</div>
 
     <label>Setler (kg × tekrar)</label>
     <div id="setsBox" class="sets">
@@ -332,3 +357,4 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.
 </script>
 </body>
 </html>
+
