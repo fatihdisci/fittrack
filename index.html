@@ -122,10 +122,13 @@
       transition: all .35s ease; z-index:60}
     #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
-    /* >>> YENİ: Tartı en altta, navbar'a çakışmasın */
+    /* >>> Tartı en altta, navbar'a çakışmasın */
     .tarti-bottom{
       margin-bottom: calc(env(safe-area-inset-bottom) + 88px);
     }
+
+    /* >>> Elle giriş kutusunu yalnızca gerekli olduğunda gösterelim */
+    .hidden{display:none}
   </style>
 </head>
 <body>
@@ -153,24 +156,27 @@
           <input type="date" id="dateInput">
         </div>
         <div>
-          <label>Hareket</label>
-          <input type="text" id="exerciseInput" placeholder="Örn: Squat" list="exerciseList">
-          <datalist id="exerciseList"></datalist>
+          <label>Kas Grubu</label>
+          <select id="muscleGroup"></select>
         </div>
       </div>
 
       <div class="row cols-2" style="margin-top:6px">
         <div>
-          <label>Set sayısı (şablon)</label>
-          <select id="setCountSelect">
-            <option>1</option><option>2</option><option>3</option>
-            <option>4</option><option>5</option><option>6</option>
-          </select>
+          <label>Hareket</label>
+          <select id="movement"></select>
         </div>
         <div>
           <label>&nbsp;</label>
-          <button type="button" class="btn ghost" id="templateBtn">Şablonu Uygula</button>
+          <button type="button" class="btn ghost" id="templateBtn">Set Şablonu Uygula</button>
         </div>
+      </div>
+
+      <!-- Elle giriş gerekirse görünür olacak. Eski id'yi koruyoruz: exerciseInput -->
+      <div id="customExerciseWrap" class="hidden">
+        <label>Hareket (Elle Giriş)</label>
+        <input type="text" id="exerciseInput" placeholder="Örn: Squat" list="exerciseList">
+        <datalist id="exerciseList"></datalist>
       </div>
 
       <label style="margin-top:8px">Setler (kg <em>opsiyonel</em> × tekrar)</label>
@@ -199,7 +205,7 @@
       <div class="row list" id="list"></div>
     </section>
 
-    <!-- Tartı Günlüğü (EN ALTA ALINDI) -->
+    <!-- Tartı Günlüğü (EN ALTA) -->
     <section class="section card tarti-bottom">
       <details id="weighBox">
         <summary style="cursor:pointer;display:flex;align-items:center;gap:8px">
@@ -252,6 +258,75 @@
   <script>
     "use strict";
 
+    /* ===== Egzersiz Veri Seti (Kas Grubu → Hareketler) ===== */
+    const EXERCISES = {
+      "Göğüs (Chest)": [
+        "Bench Press (Düz Bench)",
+        "Incline Bench Press",
+        "Decline Bench Press",
+        "Dumbbell Fly (Düz)",
+        "Incline Dumbbell Fly",
+        "Cable Crossover",
+        "Push-Up (Şınav)"
+      ],
+      "Sırt (Back)": [
+        "Pull-Up / Chin-Up",
+        "Lat Pulldown (Öne)",
+        "Barbell Row (Bent Over Row)",
+        "T-Bar Row",
+        "Seated Cable Row",
+        "Deadlift",
+        "Face Pull"
+      ],
+      "Omuz (Shoulders)": [
+        "Overhead Press (Military Press)",
+        "Dumbbell Lateral Raise",
+        "Front Raise",
+        "Rear Delt Fly",
+        "Arnold Press",
+        "Shrug"
+      ],
+      "Bacak (Legs)": [
+        "Squat (Back Squat)",
+        "Front Squat",
+        "Lunge",
+        "Leg Press",
+        "Leg Extension",
+        "Leg Curl",
+        "Romanian Deadlift",
+        "Calf Raise (Standing/Seated)"
+      ],
+      "Kol – Biceps": [
+        "Barbell Curl",
+        "Dumbbell Curl",
+        "Hammer Curl",
+        "Concentration Curl"
+      ],
+      "Kol – Triceps": [
+        "Close Grip Bench Press",
+        "Skull Crusher (EZ Bar Lying Extension)",
+        "Overhead Dumbbell Extension",
+        "Cable Pushdown",
+        "Diamond Push-Up",
+        "Dips"
+      ],
+      "Karın (Abs & Core)": [
+        "Crunch",
+        "Reverse Crunch",
+        "Leg Raise / Hanging Leg Raise",
+        "Plank",
+        "Russian Twist",
+        "Bicycle Crunch"
+      ],
+      "Tüm Vücut / Çoklu Kas": [
+        "Deadlift",
+        "Clean & Press",
+        "Farmer’s Walk",
+        "Burpee"
+      ]
+    };
+    const CUSTOM_VALUE = "__custom__";
+
     /* ===== IndexedDB ===== */
     const DB='fittrack-db', STORE='entries', WEIGH='weighins'; let db, entries=[], weighs=[];
     function idbOpen(){return new Promise((res,rej)=>{
@@ -281,7 +356,7 @@
 
     /* ===== UI Elemanları ===== */
     const dateInput=document.getElementById('dateInput');
-    const exerciseInput=document.getElementById('exerciseInput');
+    const exerciseInput=document.getElementById('exerciseInput'); // arka plan değeri burada tutuluyor
     const exerciseList=document.getElementById('exerciseList');
     const setCountSelect=document.getElementById('setCountSelect');
     const setsBox=document.getElementById('setsBox');
@@ -296,6 +371,11 @@
     const importBtn=document.getElementById('importBtn');
     const wipeBtn=document.getElementById('wipeBtn');
     const saveBtn=document.getElementById('saveBtn');
+
+    // Yeni: Kas grubu ve hareket select'leri
+    const muscleGroup = document.getElementById('muscleGroup');
+    const movement = document.getElementById('movement');
+    const customExerciseWrap = document.getElementById('customExerciseWrap');
 
     // Weigh UI
     const wDate=document.getElementById('wDate');
@@ -314,6 +394,7 @@
       return w[new Date(y,m-1,d).getDay()];
     }
 
+    /* ===== Set satırları ===== */
     function addSet(w='',r=''){
       const row=document.createElement('div'); row.className='set-row';
       row.innerHTML=`
@@ -341,7 +422,7 @@
       for(const r of rows){
         const wStr=(r.children[0].value||'').trim();
         const w = wStr==='' ? null : parseFloat(wStr.replace(',','.'));
-        const the_rep = (r.children[1].value||'').trim(); /* düzeltme: const */
+        const the_rep = (r.children[1].value||'').trim();
         const rep=parseInt(the_rep,10);
         if(!isNaN(rep) && rep>0){
           if(w===null || (!isNaN(w) && w>0)) out.push({w,rep});
@@ -350,12 +431,60 @@
       return out;
     }
 
+    /* ===== Select doldurma ve bağlama ===== */
+    function populateGroups(){
+      const groups = Object.keys(EXERCISES);
+      muscleGroup.innerHTML = groups.map(g=>`<option value="${g}">${g}</option>`).join('');
+      muscleGroup.appendChild(new Option("— (Elle seçeceğim) —", CUSTOM_VALUE));
+    }
+    function populateMovements(){
+      const g = muscleGroup.value;
+      let options = [];
+      if(g && g !== CUSTOM_VALUE){
+        options = EXERCISES[g] || [];
+      }
+      movement.innerHTML = options.map(n=>`<option value="${n}">${n}</option>`).join('');
+      movement.appendChild(new Option("— (Listede yok / Elle giriş) —", CUSTOM_VALUE));
+      // Varsayılan: ilk hareketi seç ve exerciseInput'ı senkronize et
+      if(options.length>0){
+        movement.value = options[0];
+        exerciseInput.value = options[0];
+        customExerciseWrap.classList.add('hidden');
+      }else{
+        movement.value = CUSTOM_VALUE;
+        exerciseInput.value = '';
+        customExerciseWrap.classList.remove('hidden');
+      }
+    }
+
+    muscleGroup.addEventListener('change', ()=>{
+      if(muscleGroup.value === CUSTOM_VALUE){
+        movement.innerHTML = `<option value="${CUSTOM_VALUE}">— (Listede yok / Elle giriş) —</option>`;
+        movement.value = CUSTOM_VALUE;
+        exerciseInput.value = '';
+        customExerciseWrap.classList.remove('hidden');
+      }else{
+        populateMovements();
+      }
+    });
+    movement.addEventListener('change', ()=>{
+      if(movement.value === CUSTOM_VALUE){
+        exerciseInput.value = '';
+        customExerciseWrap.classList.remove('hidden');
+      }else{
+        exerciseInput.value = movement.value;
+        customExerciseWrap.classList.add('hidden');
+      }
+    });
+
+    /* ===== Geçmiş filtreleri ===== */
     function fillExerciseOptions(){
       const names=[...new Set(entries.map(e=>e.exercise))].sort((a,b)=>a.localeCompare(b,'tr'));
       exerciseList.innerHTML = names.map(n=>`<option value="${n}">`).join('');
       filterExercise.innerHTML = ['<option value="__all__">Tümü</option>', ...names.map(n=>`<option>${n}</option>`)].join('');
     }
 
+    /* ===== Listeleme ===== */
     function render(){
       const f=filterExercise.value||"__all__";
       let filtered=[...entries];
@@ -387,17 +516,7 @@
       if (window.autoAnimate) window.autoAnimate(listDiv);
     }
 
-    function renderWeighs(){
-      const sorted=[...weighs].sort((a,b)=>b.date.localeCompare(a.date));
-      wList.innerHTML = sorted.map(w=>{
-        return `<div class="item">
-          <div><strong>${w.kg.toFixed(1)} kg</strong> <span class="badge">${w.date} (${trWeekday(w.date)})</span></div>
-          <div class="muted mono">tartı</div>
-        </div>`;
-      }).join('');
-      if (window.autoAnimate) window.autoAnimate(wList);
-    }
-
+    /* ===== Toast ===== */
     function showToast(msg='Kaydedildi ✓'){
       toast.textContent = msg;
       toast.classList.add('show');
@@ -405,33 +524,39 @@
       setTimeout(()=>toast.classList.remove('show'), 1400);
     }
 
-    /* ===== Actions (Entries) ===== */
+    /* ===== Kayıt İşlemleri (Egzersiz) ===== */
     async function saveEntry(){
       const date = dateInput.value || todayISO();
-      const exercise = exerciseInput.value.trim();
+      const exercise = (exerciseInput.value || '').trim(); // select veya elle giriş senkron
       const sets = getSets();
-      if(!exercise){ alert('Hareket adı gerekli'); return; }
+      if(!exercise){ alert('Hareket gerekli'); return; }
       if(sets.length===0){ alert('En az 1 set ekleyin'); return; }
 
       await idbAdd({date, exercise, sets, ts:Date.now()});
       entries = await idbAll();
-      exerciseInput.value=''; setsBox.innerHTML='';
+      // form temizliği
+      if(muscleGroup.value !== CUSTOM_VALUE){ // listeden seçildiyse eski değeri koru
+        // sadece setleri temizle
+      } else {
+        exerciseInput.value='';
+      }
+      setsBox.innerHTML='';
       render(); fillExerciseOptions();
       showToast();
     }
 
+    /* ===== Dışa/İçe Aktar, Sil (Egzersiz) ===== */
     function exportJSON(){
       const blob=new Blob([JSON.stringify(entries)],{type:'application/json'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='fittrack-export.json'; a.click(); URL.revokeObjectURL(a.href);
     }
-
     async function wipeData(){
       if(!confirm('Tüm egzersiz verilerini silmek istiyor musun?')) return;
       await idbClear(); entries=[]; fillExerciseOptions(); render();
       showToast('Temizlendi ✓');
     }
 
-    /* ===== Actions (Weigh-ins) ===== */
+    /* ===== Tartı Günlüğü Aksiyonları ===== */
     async function saveWeigh(){
       const date = (wDate.value || todayISO()).trim();
       const kg = parseFloat((wKg.value || '').replace(',','.'));
@@ -449,6 +574,18 @@
     async function wipeWeighs(){
       if(!confirm('Tüm tartı verilerini silmek istiyor musun?')) return;
       await idbClearWeigh(); weighs=[]; renderWeighs(); showToast('Tartı verileri temizlendi ✓');
+    }
+
+    /* ===== Tartı Listeleme ===== */
+    function renderWeighs(){
+      const sorted=[...weighs].sort((a,b)=>b.date.localeCompare(a.date));
+      wList.innerHTML = sorted.map(w=>{
+        return `<div class="item">
+          <div><strong>${w.kg.toFixed(1)} kg</strong> <span class="badge">${w.date} (${trWeekday(w.date)})</span></div>
+          <div class="muted mono">tartı</div>
+        </div>`;
+      }).join('');
+      if (window.autoAnimate) window.autoAnimate(wList);
     }
 
     /* ===== Event bindings ===== */
@@ -499,6 +636,11 @@
       weighs = await idbAllWeigh();
       dateInput.value = todayISO();
       wDate.value = todayISO();
+
+      // Kas grupları & hareketler
+      populateGroups();
+      populateMovements(); // ilk grubu doldurur ve exerciseInput'u set eder
+
       fillExerciseOptions(); render(); renderWeighs();
       if (window.autoAnimate) { window.autoAnimate(setsBox); window.autoAnimate(listDiv); window.autoAnimate(wList); }
     })();
