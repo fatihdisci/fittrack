@@ -195,8 +195,15 @@
     </section>
 
     <!-- Tartı Günlüğü -->
-    <section class="section card">
-      <h2>Tartı Günlüğü</h2>
+    <!-- Tartı Günlüğü (katlanır) -->
+<section class="section card">
+  <details id="weighBox">
+    <summary style="cursor:pointer;display:flex;align-items:center;gap:8px">
+      <strong>Tartı Günlüğü</strong>
+      <span class="pill">Aç/Kapat</span>
+    </summary>
+
+    <div style="margin-top:12px">
       <div class="row cols-2">
         <div>
           <label>Tarih</label>
@@ -216,8 +223,10 @@
         <button class="btn danger" id="wWipeBtn">Temizle</button>
       </div>
       <div class="list" id="wList"></div>
-    </section>
-  </div>
+    </div>
+  </details>
+</section>
+
 
   <!-- Alt bar -->
   <div class="navbar">
